@@ -80,12 +80,23 @@ def loadProblemFromProblemStr(problemStr):
         loads.append(Load(id, pickup, dropoff))
     return VRP(loads)
 
-if __name__ == '__main__':
+def solveVRP(problem: VRP):
+    """solveVRP() contains logic for VRP solution
 
+    Parameters
+    ----------
+    problem : VRP
+        the current problem being worked on from single inputFile
+    """
+    drivers = []
+    # Test output succeeds for evaluateShared.py
+    drivers = [[idx+1] for idx, load in enumerate(problem.loads)]
+    for loads in drivers:
+        print(loads)
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("inputFile", help="Path to file containing current problem")
     args=parser.parse_args()
-
-    print(args.inputFile)
     problem = loadProblemFromFile(args.inputFile)
-    print(problem.toProblemString())
+    solveVRP(problem)
