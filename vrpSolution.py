@@ -119,6 +119,74 @@ def greedy_vrp_v1(problem):
 
     return drivers
 
+def greedy_vrp_v2(problem):
+    """greedy_vrp_v2() picks the loads with the closest pickup points and decides between a round trip or another load
+    """
+    drivers = []
+
+    # Sorting loads by their distance from the depot
+    sorted_loads = sorted(problem.loads, key=lambda load: distanceBetweenPoints(DEPO, load.pickup))
+
+    # Start at zero
+    current_driver_loads = []
+    current_driver_distance = 0
+    current_driver_pickup = DEPO
+
+    # Pop the first load from the sorted list
+    pop_next = True
+
+    while sorted_loads:
+        if pop_next:
+            load = sorted_loads.pop(0)
+        else:
+            pop_next = True
+
+        # Calculate the additional time required to pick up and drop off the load
+        additional_distance = distanceBetweenPoints(current_driver_pickup, load.pickup) + \
+                              distanceBetweenPoints(load.pickup, load.dropoff)
+        distance_to_depo = distanceBetweenPoints(load.dropoff, DEPO)
+
+        # If adding this load exceeds the maximum drive time for the current driver, start a new driver
+        if current_driver_distance + additional_distance + distance_to_depo > MAX_DISTANCE:
+            drivers.append(current_driver_loads)
+            current_driver_loads = []
+            current_driver_distance = 0
+            current_driver_pickup = DEPO
+        else:
+            # Decide on whether the driver goes to the next pickup or goes back
+            next_loads = sorted(sorted_loads, key=lambda next_load: distanceBetweenPoints(load.dropoff, next_load.pickup))
+            next_load = next_loads[0]
+            additional_distance_next_load = additional_distance + \
+                                            distanceBetweenPoints(load.dropoff, next_load.pickup) + \
+                                            distanceBetweenPoints(next_load.pickup, next_load.dropoff) + \
+                                            distanceBetweenPoints(next_load.dropoff, DEPO)
+            if current_driver_distance + additional_distance_next_load < MAX_DISTANCE:
+                # Driver should take on the load in the next loop iteration
+                sorted_loads.remove(next_load)
+                load = next_load
+                pop_next = False
+
+        # Add the load to the current driver's schedule
+        current_driver_loads.append(load.id)
+
+        # Update the current driver's total distance
+        current_driver_distance += additional_distance
+
+    # Add the remaining loads to the last driver
+    if current_driver_loads:
+        drivers.append(current_driver_loads)
+
+    # Add the remaining loads to the last driver
+    if current_driver_loads:
+        drivers.append(current_driver_loads)
+
+    return drivers
+
+def driver_per_load_vrp(problem):
+    """driver_per_load_vrp will assign one driver per load
+    """
+    return [[load.id] for load in problem.loads]
+
 def solveVRP(problem: VRP):
     """solveVRP() contains logic for VRP solution
 
@@ -127,14 +195,7 @@ def solveVRP(problem: VRP):
     problem : VRP
         the current problem being worked on from single inputFile
     """
-    drivers = []
-    useMySolution = True
-
-    if useMySolution:
-        drivers = greedy_vrp_v1(problem)
-    else:
-        # Test output succeeds for evaluateShared.py
-        drivers = [[idx+1] for idx, load in enumerate(problem.loads)]
+    drivers = driver_per_load_vrp(problem)
 
     for loads in drivers:
         print(loads)
